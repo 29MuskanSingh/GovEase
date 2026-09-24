@@ -12,6 +12,7 @@ const identityRoutes = require('./routes/identity.routes');
 const documentRoutes = require('./routes/document.routes');
 const preferenceRoutes = require('./routes/preference.routes');
 const certificationRoutes = require('./routes/certification.routes');
+const examRoutes = require('./routes/exam.routes');
 
 const app = express();
 
@@ -44,7 +45,8 @@ app.get('/', (req, res) => {
       identity: '/api/identity',
       document: '/api/document',
       preference: '/api/preference',
-      certification: '/api/certification'
+      certification: '/api/certification',
+      exam: '/api/exams'
     }
   });
 });
@@ -58,6 +60,7 @@ app.use('/api/identity', identityRoutes);
 app.use('/api/document', documentRoutes);
 app.use('/api/preference', preferenceRoutes);
 app.use('/api/certification', certificationRoutes);
+app.use('/api/exams', examRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

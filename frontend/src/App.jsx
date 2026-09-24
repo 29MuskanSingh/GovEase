@@ -5,6 +5,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
+import ExamsPage from './pages/ExamsPage';
+import ExamDetailPage from './pages/ExamDetailPage';
+import ExamApplicationPage from './pages/ExamApplicationPage';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -29,8 +32,11 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+             <Route path="/exams" element={<ProtectedRoute><ExamsPage /></ProtectedRoute>} />
+             <Route path="/exams/:id" element={<ProtectedRoute><ExamDetailPage /></ProtectedRoute>} />
+             <Route path="/exams/:id/apply" element={<ProtectedRoute><ExamApplicationPage /></ProtectedRoute>} />
+             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           </Routes>
         </div>
       </Router>

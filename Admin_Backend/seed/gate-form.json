@@ -1,0 +1,47 @@
+{
+  "title": "GATE CS/IT Application Form",
+  "description": "Application form for Graduate Aptitude Test in Engineering (CS/IT papers).",
+  "exam": "EXAM_20bfd6a5a79e4376",
+  "status": "active",
+  "fields": [
+    { "fieldId": "f_001", "label": "Full Name", "type": "text", "key": "fullName", "required": true, "width": "half", "sortOrder": 0 },
+    { "fieldId": "f_002", "label": "Email Address", "type": "email", "key": "email", "required": true, "width": "half", "sortOrder": 1 },
+    { "fieldId": "f_003", "label": "Phone Number", "type": "text", "key": "phone", "required": true, "width": "half", "sortOrder": 2 },
+    { "fieldId": "f_004", "label": "Date of Birth", "type": "date", "key": "dateOfBirth", "required": true, "width": "half", "sortOrder": 3 },
+    { "fieldId": "f_005", "label": "Gender", "type": "select", "key": "gender", "width": "half",
+      "options": [
+        { "label": "Male", "value": "Male" },
+        { "label": "Female", "value": "Female" },
+        { "label": "Other", "value": "Other" }
+      ], "sortOrder": 4 },
+    { "fieldId": "f_006", "label": "Bachelor's Degree (BCA 4-year eligible)", "type": "checkbox", "key": "degree", "required": true, "width": "full",
+      "options": [
+        { "label": "B.E./B.Tech (any discipline)", "value": "BE_BTech" },
+        { "label": "BCA (4-year program)", "value": "BCA_4yr" },
+        { "label": "B.Sc. + PG", "value": "BSc_PG" },
+        { "label": "Other", "value": "Other" }
+      ], "sortOrder": 5 },
+    { "fieldId": "f_007", "label": "Passing Year", "type": "number", "key": "passingYear", "width": "half", "sortOrder": 6 },
+    { "fieldId": "f_008", "label": "Percentage / CGPA", "type": "number", "key": "percentage", "width": "half", "sortOrder": 7 },
+    { "fieldId": "f_009", "label": "Discipline (Multi-point)", "type": "checkbox", "key": "discipline", "required": true, "width": "half",
+      "options": [
+        { "label": "Computer Science", "value": "CS" },
+        { "label": "Information Technology", "value": "IT" }
+      ], "sortOrder": 8 },
+    { "fieldId": "f_010", "label": "Candidate Photo", "type": "image", "key": "photo", "width": "half", "sortOrder": 9 },
+    { "fieldId": "f_011", "label": "Signature", "type": "signature", "key": "signature", "width": "half", "sortOrder": 10 },
+    { "fieldId": "f_012", "label": "Preferred City", "type": "select", "key": "preferredCity", "width": "half",
+      "options": [
+        { "label": "Delhi", "value": "Delhi" },
+        { "label": "Mumbai", "value": "Mumbai" },
+        { "label": "Bangalore", "value": "Bangalore" },
+        { "label": "Chennai", "value": "Chennai" }
+      ], "sortOrder": 11 },
+    { "fieldId": "f_013", "label": "Paper", "type": "select", "key": "paper1", "required": true, "width": "full",
+      "options": [
+        { "label": "CS (Computer Science)", "value": "CS" },
+        { "label": "IT (Information Technology)", "value": "IT" }
+      ], "sortOrder": 12 },
+    { "fieldId": "f_014", "label": "Voter ID Front", "type": "image", "key": "voterIdFront", "required": false, "width": "half", "sortOrder": 13, "allowedImageTypes": ["image/jpeg", "image/png"] }
+  ]
+}

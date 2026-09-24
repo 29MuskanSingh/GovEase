@@ -21,6 +21,7 @@ const Navbar = () => {
           <>
             <span className="user-name">Hello, {user?.fullName}</span>
             <Link to="/dashboard" className="nav-link">Dashboard</Link>
+            <Link to="/exams" className="nav-link">Exams</Link>
             <Link to="/profile" className="nav-link">Profile</Link>
             <button onClick={handleLogout} className="nav-btn-logout">Logout</button>
           </>

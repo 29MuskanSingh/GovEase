@@ -136,9 +136,9 @@
 }
 
 .identity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  gap: 16px !important;
 }
 
 .empty-state {
@@ -148,16 +148,19 @@
 }
 
 .identity-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 16px 20px;
+  border-radius: 12px;
+  padding: 20px !important;
+  background: white;
+  min-height: 150px !important;
 }
 
 .identity-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e0;
 }
 
 .item-info {

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import * as authApi from '../api/authApi';
 
 const AuthContext = createContext(null);
@@ -7,38 +7,82 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const refreshTimer = useRef(null);
+
+  const storeTokens = useCallback((accessToken, refreshToken) => {
+    if (accessToken) {
+      localStorage.setItem('token', accessToken);
+      setToken(accessToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem('refreshToken', refreshToken);
+    }
+  }, []);
+
+  const clearSession = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    setToken(null);
+    setUser(null);
+  }, []);
+
+  // Silently exchange the refresh token for a new access token.
+  // Runs on mount and every 10 minutes so the access token never
+  // expires while the user is working.
+  const refreshAccessToken = useCallback(async () => {
+    if (!localStorage.getItem('refreshToken')) return false;
+    try {
+      const data = await authApi.refresh();
+      storeTokens(data.accessToken, null);
+      return true;
+    } catch (error) {
+      // Refresh token is invalid/expired: end the session cleanly.
+      clearSession();
+      return false;
+    }
+  }, [storeTokens, clearSession]);
 
   useEffect(() => {
     const initAuth = async () => {
-      if (token) {
+      if (localStorage.getItem('token')) {
         try {
+          await refreshAccessToken();
           const response = await authApi.getCurrentUser();
           setUser(response.user);
         } catch (error) {
           console.error('Auth check failed:', error);
-          localStorage.removeItem('token');
-          setToken(null);
+          clearSession();
         }
       }
       setLoading(false);
     };
     initAuth();
-  }, [token]);
+  }, []);
+
+  // Keep the session alive for as long as the tab is open.
+  useEffect(() => {
+    if (refreshTimer.current) clearInterval(refreshTimer.current);
+    refreshTimer.current = setInterval(() => {
+      if (localStorage.getItem('token')) {
+        refreshAccessToken();
+      }
+    }, 10 * 60 * 1000);
+
+    return () => {
+      if (refreshTimer.current) clearInterval(refreshTimer.current);
+    };
+  }, [refreshAccessToken]);
 
   const loginUser = async (email, password) => {
     const response = await authApi.login({ email, password });
-    localStorage.setItem('token', response.accessToken);
-    localStorage.setItem('refreshToken', response.refreshToken);
-    setToken(response.accessToken);
+    storeTokens(response.accessToken, response.refreshToken);
     setUser(response.user);
     return response;
   };
 
   const registerUser = async (userData) => {
     const response = await authApi.register(userData);
-    localStorage.setItem('token', response.accessToken);
-    localStorage.setItem('refreshToken', response.refreshToken);
-    setToken(response.accessToken);
+    storeTokens(response.accessToken, response.refreshToken);
     setUser(response.user);
     return response;
   };
@@ -49,10 +93,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    setToken(null);
-    setUser(null);
+    clearSession();
   };
 
   const value = {
@@ -62,7 +103,8 @@ export const AuthProvider = ({ children }) => {
     loginUser,
     registerUser,
     logoutUser,
-    isAuthenticated: !!token && !!user
+    refreshAccessToken,
+    isAuthenticated: !!localStorage.getItem('token') && !!user
   };
 
   return (

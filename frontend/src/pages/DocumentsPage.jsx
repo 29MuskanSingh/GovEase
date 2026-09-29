@@ -12,25 +12,52 @@ const DocumentsPage = () => {
   const [formData, setFormData] = useState({ documentType: 'Aadhaar' });
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [imageUrls, setImageUrls] = useState({});
+  const [loadingImages, setLoadingImages] = useState({});
   const fileInputRef = useRef(null);
 
   const documentTypes = [
     'Aadhaar', 'PAN', 'Voter Card', 'Driving License',
     'Passport', 'Marksheet', 'Experience Certificate',
     'Income Certificate', 'Disability Certificate',
-    'Birth Certificate', 'Signature', 'Domicile Certificate'
+    'Birth Certificate', 'Signature', 'Domicile Certificate',
+    'Resume', 'Other Documents'
   ];
 
   useEffect(() => {
     loadDocuments();
   }, [user]);
 
+  useEffect(() => {
+    return () => {
+      Object.values(imageUrls).forEach(url => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [imageUrls]);
+
+  // Load images when documents change
+  useEffect(() => {
+    documents.forEach(doc => {
+      if (isImageFile(doc.fileName, doc.mimeType) && !imageUrls[doc._id] && !loadingImages[doc._id]) {
+        loadImageUrl(doc._id, documentApi.getFileUrl(doc._id));
+      }
+    });
+  }, [documents]);
+
   const loadDocuments = async () => {
     if (!user) return;
     try {
       const res = await documentApi.getAll(user._id || user.id);
-      if (res.success) setDocuments(res.documents);
+      console.log('Documents response:', res);
+      if (res.success) {
+        console.log('Documents loaded:', res.documents);
+        setDocuments(res.documents);
+      }
     } catch (err) {
+      console.error('Failed to load documents:', err);
       setMessage('Failed to load documents');
     }
     setLoading(false);
@@ -97,8 +124,52 @@ const DocumentsPage = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this document?')) return;
     await documentApi.delete(id);
+    setImageUrls(prev => {
+      const newUrls = { ...prev };
+      delete newUrls[id];
+      return newUrls;
+    });
     setMessage('Document deleted!');
     loadDocuments();
+  };
+
+  const loadImageUrl = async (docId, fileUrl) => {
+    if (imageUrls[docId]) return imageUrls[docId];
+    if (loadingImages[docId]) return null;
+
+    console.log('Loading image for doc:', docId, 'URL:', fileUrl);
+    setLoadingImages(prev => ({ ...prev, [docId]: true }));
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(fileUrl, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      console.log('Image fetch response status:', response.status);
+      if (!response.ok) throw new Error('Failed to fetch image');
+
+      const blob = await response.blob();
+      console.log('Image blob size:', blob.size, 'type:', blob.type);
+      const blobUrl = URL.createObjectURL(blob);
+      setImageUrls(prev => ({ ...prev, [docId]: blobUrl }));
+      console.log('Image loaded successfully for doc:', docId);
+      return blobUrl;
+    } catch (error) {
+      console.error('Error loading image:', error, 'Doc ID:', docId);
+      return null;
+    } finally {
+      setLoadingImages(prev => ({ ...prev, [docId]: false }));
+    }
+  };
+
+  const isImageFile = (fileName, mimeType) => {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const hasImageExtension = imageExtensions.some(ext => fileName?.toLowerCase().endsWith(ext));
+    const hasImageMimeType = mimeType?.includes('image');
+    const result = hasImageExtension || hasImageMimeType;
+    console.log('isImageFile check:', { fileName, mimeType, hasImageExtension, hasImageMimeType, result });
+    return result;
   };
 
   const getStatusColor = (status) => {
@@ -150,7 +221,7 @@ const DocumentsPage = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,application/pdf"
+                accept="image/jpeg,image/png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={handleFileSelect}
                 hidden
               />
@@ -167,22 +238,44 @@ const DocumentsPage = () => {
             <div className="empty-state">No documents uploaded yet.</div>
           ) : (
             <div className="document-grid">
-              {documents.map(doc => (
-                <div key={doc._id} className="document-item">
-                  <div className="doc-info">
-                    <span className="doc-type">{doc.documentType}</span>
-                    <span className="doc-name">{doc.fileName}</span>
-                    <span className="doc-size">{(doc.fileSize / 1024).toFixed(1)} KB</span>
-                    <span className="doc-status" style={{ color: getStatusColor(doc.verificationStatus) }}>
-                      {doc.verificationStatus}
-                    </span>
+              {documents.map(doc => {
+                const isImage = isImageFile(doc.fileName, doc.mimeType);
+                const imageUrl = imageUrls[doc._id];
+                const isLoading = loadingImages[doc._id];
+
+                return (
+                  <div key={doc._id} className="document-item">
+                    {isImage ? (
+                      <div className="doc-image-container">
+                        {isLoading ? (
+                          <div className="doc-image-loader">Loading...</div>
+                        ) : imageUrl ? (
+                          <img 
+                            src={imageUrl} 
+                            alt={doc.fileName} 
+                            className="doc-preview-image"
+                            onClick={() => window.open(documentApi.getFileUrl(doc._id), '_blank')}
+                          />
+                        ) : (
+                          <div className="doc-image-placeholder">No Preview</div>
+                        )}
+                      </div>
+                    ) : null}
+                    <div className="doc-info">
+                      <span className="doc-type">{doc.documentType}</span>
+                      <span className="doc-name">{doc.fileName}</span>
+                      <span className="doc-size">{(doc.fileSize / 1024).toFixed(1)} KB</span>
+                      <span className="doc-status" style={{ color: getStatusColor(doc.verificationStatus) }}>
+                        {doc.verificationStatus}
+                      </span>
+                    </div>
+                    <div className="doc-actions">
+                      <a href={documentApi.getFileUrl(doc._id)} target="_blank" rel="noopener noreferrer" className="btn-view">View</a>
+                      <button className="btn-delete" onClick={() => handleDelete(doc._id)}>Delete</button>
+                    </div>
                   </div>
-                  <div className="doc-actions">
-                    <a href={documentApi.getFileUrl(doc._id)} target="_blank" rel="noopener noreferrer" className="btn-view">View</a>
-                    <button className="btn-delete" onClick={() => handleDelete(doc._id)}>Delete</button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

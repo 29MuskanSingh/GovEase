@@ -24,6 +24,7 @@ const DOCUMENT_TYPES = [
   { id: 'income_cert', label: 'Income Certificate', icon: '💰', category: 'financial', multiple: false },
   { id: 'caste_cert', label: 'Caste Certificate', icon: '📋', category: 'financial', multiple: false },
   { id: 'disability_cert', label: 'Disability Certificate', icon: '♿', category: 'medical', multiple: false },
+  { id: 'resume', label: 'Resume', icon: '📄', category: 'other', multiple: true },
   { id: 'other', label: 'Other Documents', icon: '📁', category: 'other', multiple: true }
 ];
 
@@ -92,9 +93,14 @@ class DocumentController {
         return res.status(400).json({ success: false, message: 'File size exceeds 5MB limit' });
       }
 
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      // Resumes are commonly .docx, so allow Word documents alongside PDF/images.
+      const allowedTypes = [
+        'image/jpeg', 'image/png', 'image/jpg', 'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
       if (!allowedTypes.includes(mimetype)) {
-        return res.status(400).json({ success: false, message: 'Invalid file type. Only JPEG, PNG, PDF allowed' });
+        return res.status(400).json({ success: false, message: 'Invalid file type. Only JPEG, PNG, PDF, DOC, DOCX allowed' });
       }
 
       const docId = 'DOC' + Date.now().toString().slice(-6) + Math.random().toString(36).substr(2, 4);
@@ -121,6 +127,13 @@ class DocumentController {
           });
 
           await document.save();
+
+          // If this is a passport photo, update user's profile picture
+          if (documentType === 'photo') {
+            const User = require('../models/user.model');
+            await User.findByIdAndUpdate(userId, { profilePicture: docId });
+          }
+
           res.status(201).json({ success: true, document });
         } catch (saveError) {
           await gfsBucket.delete(uploadStream.id);

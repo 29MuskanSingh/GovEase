@@ -1,4 +1,4 @@
-﻿const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
   _id: {
     type: String,
@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
   fullName: {
     type: String,
     required: [true, 'Full name is required'],
+    trim: true
+  },
+  profilePicture: {
+    type: String,
     trim: true
   },
   status: {

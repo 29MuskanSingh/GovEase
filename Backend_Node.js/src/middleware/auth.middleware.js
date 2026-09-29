@@ -1,18 +1,23 @@
-﻿const jwtService = require('../services/jwt.service');
+const jwtService = require('../services/jwt.service');
 const User = require('../models/user.model');
 
 const authMiddleware = async (req, res, next) => {
   try {
+    let token;
     const authHeader = req.header('Authorization');
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query && req.query.token) {
+      token = req.query.token;
+    }
+
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: 'Access token required'
       });
     }
-
-    const token = authHeader.split(' ')[1];
 
     const decoded = jwtService.verifyAccessToken(token);
 

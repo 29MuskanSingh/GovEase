@@ -216,7 +216,10 @@ export const documentApi = {
     });
     return res.json();
   },
-  getFileUrl: (id) => `${API_BASE}/document/file/${id}`
+  getFileUrl: (id) => {
+    const token = localStorage.getItem('token');
+    return `${API_BASE}/document/file/${id}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  }
 };
 
 export const preferenceApi = {

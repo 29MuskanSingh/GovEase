@@ -38,6 +38,23 @@ export const logout = async () => {
   return response.json();
 };
 
+export const refresh = async () => {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) {
+    throw new Error('Refresh token is required');
+  }
+  const response = await fetch(`${API_BASE}/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to refresh token');
+  }
+  return data;
+};
+
 export const getCurrentUser = async () => {
   const token = localStorage.getItem('token');
   const response = await fetch(`${API_BASE}/me`, {

@@ -29,4 +29,25 @@ export const examsApi = {
   }
 };
 
+export const opportunitiesApi = {
+  list: async (params = {}) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        searchParams.append(key, value);
+      }
+    });
+    const res = await fetch(`${API_BASE}/opportunities?${searchParams.toString()}`, { headers: getAuthHeaders() });
+    return res.json();
+  },
+  get: async (id) => {
+    const res = await fetch(`${API_BASE}/opportunities/${id}`, { headers: getAuthHeaders() });
+    return res.json();
+  },
+  getForm: async (id) => {
+    const res = await fetch(`${API_BASE}/opportunities/${id}/form`, { headers: getAuthHeaders() });
+    return res.json();
+  }
+};
+
 export default getAuthHeaders;

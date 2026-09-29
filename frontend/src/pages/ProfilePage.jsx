@@ -44,6 +44,7 @@ const [dragOver, setDragOver] = useState(null);
 const fileInputRefs = useRef({});
 const [imageUrls, setImageUrls] = useState({});
 const [certImageUrls, setCertImageUrls] = useState({});
+const [profilePictureUrl, setProfilePictureUrl] = useState(null);
 
 function getEmptyEdu() { return { educationType: '', schoolName: '', boardUniversity: '', stream: '', degree: '', specialization: '', institution: '', startingYear: '', passingYear: '', percentageCgpa: '' }; }
 function getEmptyExp() { return { organization: '', role: '', employmentStatus: '', startDate: '', endDate: '', currentlyWorking: false, description: '' }; }
@@ -64,8 +65,37 @@ function getEmptyCert() { return { name: '', issuingOrganization: '', credential
           URL.revokeObjectURL(url);
         }
       });
+      if (profilePictureUrl && profilePictureUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(profilePictureUrl);
+      }
     };
-  }, [imageUrls, certImageUrls]);
+  }, [imageUrls, certImageUrls, profilePictureUrl]);
+
+  // Load profile picture when user changes
+  useEffect(() => {
+    const loadProfilePicture = async () => {
+      if (user?.profilePicture) {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(documentApi.getFileUrl(user.profilePicture), {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+
+          if (response.ok) {
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            setProfilePictureUrl(blobUrl);
+          }
+        } catch (error) {
+          console.error('Error loading profile picture:', error);
+        }
+      } else {
+        setProfilePictureUrl(null);
+      }
+    };
+
+    loadProfilePicture();
+  }, [user]);
 
   // Load certification images when certifications data changes
   useEffect(() => {
@@ -75,6 +105,16 @@ function getEmptyCert() { return { name: '', issuingOrganization: '', credential
       }
     });
   }, [certifications]);
+
+  // Load document images when documents data changes
+  useEffect(() => {
+    documents.forEach(doc => {
+      const isImage = doc?.mimeType?.includes('image') || doc?.fileName?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+      if (isImage && !imageUrls[doc._id]) {
+        loadImageUrl(doc._id, documentApi.getFileUrl(doc._id));
+      }
+    });
+  }, [documents]);
 
   const loadImageUrl = async (docId, fileUrl) => {
     if (imageUrls[docId]) return imageUrls[docId];
@@ -554,7 +594,13 @@ function getEmptyCert() { return { name: '', issuingOrganization: '', credential
 
       <div className="profile-header">
         <div className="header-content">
-          <div className="user-avatar">{(user?.fullName || 'U')[0]}</div>
+          <div className="user-avatar">
+            {profilePictureUrl ? (
+              <img src={profilePictureUrl} alt="Profile" className="profile-picture" />
+            ) : (
+              <span>{(user?.fullName || 'U')[0]}</span>
+            )}
+          </div>
           <div className="user-info">
             <h1>{user?.fullName}</h1>
             <p className="user-id">ID: {user?._id || user?.id}</p>
@@ -756,7 +802,7 @@ function getEmptyCert() { return { name: '', issuingOrganization: '', credential
                             <div className={`edu-doc-card ${eduMarksheet ? 'uploaded' : ''}`}>
                               {eduMarksheet ? (
                                 <div className="doc-image-preview">
-                                  <img src={documentApi.getFileUrl(eduMarksheet._id)} alt="Marksheet" className="doc-thumbnail" />
+                                  <img src={imageUrls[eduMarksheet._id] || documentApi.getFileUrl(eduMarksheet._id)} alt="Marksheet" className="doc-thumbnail" />
                                   <div className="doc-card-actions">
                                     <a href={documentApi.getFileUrl(eduMarksheet._id)} target="_blank" rel="noopener noreferrer" className="doc-view-btn">View</a>
                                     <button onClick={() => handleDocDelete(eduMarksheet._id, 'Marksheet')} className="doc-delete-btn">Delete</button>
@@ -774,7 +820,7 @@ function getEmptyCert() { return { name: '', issuingOrganization: '', credential
                             <div className={`edu-doc-card ${eduCertificate ? 'uploaded' : ''}`}>
                               {eduCertificate ? (
                                 <div className="doc-image-preview">
-                                  <img src={documentApi.getFileUrl(eduCertificate._id)} alt="Certificate" className="doc-thumbnail" />
+                                  <img src={imageUrls[eduCertificate._id] || documentApi.getFileUrl(eduCertificate._id)} alt="Certificate" className="doc-thumbnail" />
                                   <div className="doc-card-actions">
                                     <a href={documentApi.getFileUrl(eduCertificate._id)} target="_blank" rel="noopener noreferrer" className="doc-view-btn">View</a>
                                     <button onClick={() => handleDocDelete(eduCertificate._id, 'Certificate')} className="doc-delete-btn">Delete</button>
@@ -844,7 +890,7 @@ function getEmptyCert() { return { name: '', issuingOrganization: '', credential
                             <div className={`exp-doc-card ${expCertificate ? 'uploaded' : ''}`}>
                               {expCertificate ? (
                                 <div className="doc-image-preview">
-                                  <img src={documentApi.getFileUrl(expCertificate._id)} alt="Experience Certificate" className="doc-thumbnail" />
+                                  <img src={imageUrls[expCertificate._id] || documentApi.getFileUrl(expCertificate._id)} alt="Experience Certificate" className="doc-thumbnail" />
                                   <div className="doc-card-actions">
                                     <a href={documentApi.getFileUrl(expCertificate._id)} target="_blank" rel="noopener noreferrer" className="doc-view-btn">View</a>
                                     <button onClick={() => handleDocDelete(expCertificate._id, 'Experience Certificate')} className="doc-delete-btn">Delete</button>
@@ -1058,13 +1104,16 @@ function getEmptyCert() { return { name: '', issuingOrganization: '', credential
                             return (
                               <div className="doc-image-full">
                                 <img
-                                  src={documentApi.getFileUrl(firstDoc._id)}
+                                  src={imageUrls[firstDoc._id] || documentApi.getFileUrl(firstDoc._id)}
                                   alt={firstDoc.fileName}
                                   className="doc-full-image"
                                   onClick={() => window.open(documentApi.getFileUrl(firstDoc._id), '_blank')}
                                   onError={(e) => {
                                     console.error('Image failed to load:', firstDoc._id, firstDoc.fileName);
-                                    e.target.style.display = 'none';
+                                    const fallbackUrl = documentApi.getFileUrl(firstDoc._id);
+                                    if (e.target.src !== fallbackUrl) {
+                                      e.target.src = fallbackUrl;
+                                    }
                                   }}
                                 />
                                 <button
